@@ -1,13 +1,32 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
 from .models import Poll, Choice, Vote
-from .serializers import PollSerializer, ChoiceSerializer, VoteSerializer
+from .serializers import PollSerializer, ChoiceSerializer, VoteSerializer, UserRegistrationSerializer
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+
+@api_view(['POST'])
+def logout(request):
+    try:
+        res = Response()
+        res.data = {'success': True}
+        res.delete_cookie('access_token')
+        res.delete_cookie('refresh_token')
+        return res
+    except:
+        return Response({'success':False})
+
+@api_view(['POST'])
+def register(request):
+    serializer=UserRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.error)
 
 
 @api_view(['GET', 'POST'])
@@ -80,7 +99,6 @@ def choice_detail_update_delete(request, choice_id):
         choice.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# Vote CRUD
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def votes_list_or_create(request, poll_id):
